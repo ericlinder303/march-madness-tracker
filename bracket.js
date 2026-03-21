@@ -1,11 +1,6 @@
 // Bracket Visualization Module
 import { PLAYERS } from './config.js';
 
-// Standard bracket matchups by seed (1v16, 8v9, 5v12, 4v13, 6v11, 3v14, 7v10, 2v15)
-const FIRST_ROUND_MATCHUPS = [
-  [1, 16], [8, 9], [5, 12], [4, 13], [6, 11], [3, 14], [7, 10], [2, 15]
-];
-
 // Build team to player lookup
 const teamOwnerMap = new Map();
 for (const [playerName, playerData] of Object.entries(PLAYERS)) {
@@ -25,12 +20,10 @@ function getTeamOwner(teamName) {
   if (!teamName) return null;
   const lower = teamName.toLowerCase();
 
-  // Exact match
   if (teamOwnerMap.has(lower)) {
     return teamOwnerMap.get(lower);
   }
 
-  // Partial match
   for (const [key, value] of teamOwnerMap.entries()) {
     if (lower.includes(key) || key.includes(lower)) {
       return value;
@@ -41,152 +34,225 @@ function getTeamOwner(teamName) {
 }
 
 /**
- * Extract region and round info from game data
+ * Parse region and round from game notes
  */
 function parseGameInfo(game) {
   const round = game.round || '';
   let roundNum = 0;
+  let region = 'Unknown';
 
-  // Check for various round name formats
-  if (round.includes('1st Round') || round.includes('First Round') || round.includes('Round of 64')) {
-    roundNum = 1;
-  } else if (round.includes('2nd Round') || round.includes('Second Round') || round.includes('Round of 32')) {
-    roundNum = 2;
-  } else if (round.includes('Sweet 16') || round.includes('Sweet Sixteen')) {
-    roundNum = 3;
-  } else if (round.includes('Elite Eight') || round.includes('Elite 8')) {
-    roundNum = 4;
-  } else if (round.includes('Final Four')) {
-    roundNum = 5;
-  } else if (round.includes('Championship') || round.includes('National Championship')) {
-    // Make sure it's the actual championship game, not just a game in the championship tournament
-    if (!round.includes('1st') && !round.includes('2nd') && !round.includes('Region')) {
-      roundNum = 6;
-    }
-  }
+  // Extract region
+  if (round.includes('South')) region = 'South';
+  else if (round.includes('East')) region = 'East';
+  else if (round.includes('West')) region = 'West';
+  else if (round.includes('Midwest')) region = 'Midwest';
+  else if (round.includes('Final Four')) region = 'Final Four';
 
-  return { roundNum, roundName: round };
+  // Extract round
+  if (round.includes('1st Round') || round.includes('First Round')) roundNum = 1;
+  else if (round.includes('2nd Round') || round.includes('Second Round')) roundNum = 2;
+  else if (round.includes('Sweet 16') || round.includes('Sweet Sixteen')) roundNum = 3;
+  else if (round.includes('Elite Eight') || round.includes('Elite 8')) roundNum = 4;
+  else if (round.includes('Final Four')) roundNum = 5;
+  else if (round.includes('Championship') && !round.includes('Region')) roundNum = 6;
+
+  return { roundNum, region, roundName: round };
 }
 
 /**
- * Organize games by round
+ * Organize games by region and round
  */
-export function organizeGamesByRound(allGames) {
-  const rounds = {
-    1: [], // First Round
-    2: [], // Second Round
-    3: [], // Sweet 16
-    4: [], // Elite 8
-    5: [], // Final Four
-    6: []  // Championship
+function organizeGames(allGames) {
+  const regions = {
+    'South': { 1: [], 2: [], 3: [], 4: [] },
+    'East': { 1: [], 2: [], 3: [], 4: [] },
+    'West': { 1: [], 2: [], 3: [], 4: [] },
+    'Midwest': { 1: [], 2: [], 3: [], 4: [] }
   };
+  const finalFour = { 5: [], 6: [] };
 
   for (const game of allGames) {
-    const { roundNum } = parseGameInfo(game);
-    if (roundNum > 0 && roundNum <= 6) {
-      rounds[roundNum].push(game);
+    const { roundNum, region } = parseGameInfo(game);
+
+    if (roundNum === 5 || roundNum === 6) {
+      if (!finalFour[roundNum]) finalFour[roundNum] = [];
+      finalFour[roundNum].push(game);
+    } else if (roundNum >= 1 && roundNum <= 4 && regions[region]) {
+      regions[region][roundNum].push(game);
     }
   }
 
-  return rounds;
+  return { regions, finalFour };
 }
 
 /**
- * Render the bracket visualization
+ * Render the full bracket visualization
  */
 export function renderBracket(allGames, eliminations) {
-  const rounds = organizeGamesByRound(allGames);
+  const { regions, finalFour } = organizeGames(allGames);
   const eliminatedTeams = new Set(eliminations.map(e => e.team.toLowerCase()));
 
-  const roundNames = {
-    1: 'First Round',
-    2: 'Second Round',
-    3: 'Sweet 16',
-    4: 'Elite 8',
-    5: 'Final Four',
-    6: 'Championship'
-  };
+  let html = '<div class="bracket-wrapper">';
 
-  let html = '<div class="bracket-container">';
+  // Left side: South and East regions
+  html += '<div class="bracket-side bracket-left">';
+  html += renderRegion('South', regions['South'], eliminatedTeams, 'left');
+  html += renderRegion('East', regions['East'], eliminatedTeams, 'left');
+  html += '</div>';
 
-  // Render each round
-  for (let r = 1; r <= 6; r++) {
-    const games = rounds[r];
-    const hasGames = games.length > 0;
+  // Center: Final Four and Championship
+  html += '<div class="bracket-center">';
+  html += renderFinalFour(finalFour, eliminatedTeams);
+  html += '</div>';
 
-    html += `
-      <div class="bracket-round" data-round="${r}">
-        <div class="round-header">${roundNames[r]}</div>
-        <div class="round-games">
-    `;
-
-    if (hasGames) {
-      for (const game of games) {
-        html += renderBracketGame(game, eliminatedTeams);
-      }
-    } else {
-      html += `<div class="round-pending">Upcoming</div>`;
-    }
-
-    html += '</div></div>';
-  }
+  // Right side: West and Midwest regions
+  html += '<div class="bracket-side bracket-right">';
+  html += renderRegion('West', regions['West'], eliminatedTeams, 'right');
+  html += renderRegion('Midwest', regions['Midwest'], eliminatedTeams, 'right');
+  html += '</div>';
 
   html += '</div>';
 
-  // Add legend
+  // Legend
   html += renderBracketLegend();
 
   return html;
 }
 
 /**
- * Render a single game in the bracket
+ * Render a single region
  */
-function renderBracketGame(game, eliminatedTeams) {
+function renderRegion(regionName, rounds, eliminatedTeams, side) {
+  const roundNames = ['', 'Round 1', 'Round 2', 'Sweet 16', 'Elite 8'];
+  const roundOrder = side === 'left' ? [1, 2, 3, 4] : [4, 3, 2, 1];
+
+  let html = `<div class="bracket-region" data-region="${regionName}">`;
+  html += `<div class="region-header">${regionName}</div>`;
+  html += '<div class="region-rounds">';
+
+  for (const r of roundOrder) {
+    const games = rounds[r] || [];
+    html += `<div class="bracket-round" data-round="${r}">`;
+    html += `<div class="round-label">${roundNames[r]}</div>`;
+    html += '<div class="round-matchups">';
+
+    if (games.length > 0) {
+      for (const game of games) {
+        html += renderMatchup(game, eliminatedTeams);
+      }
+    } else {
+      // Show placeholder matchups
+      const expectedGames = r === 1 ? 8 : r === 2 ? 4 : r === 3 ? 2 : 1;
+      for (let i = 0; i < expectedGames; i++) {
+        html += renderEmptyMatchup();
+      }
+    }
+
+    html += '</div></div>';
+  }
+
+  html += '</div></div>';
+  return html;
+}
+
+/**
+ * Render Final Four section
+ */
+function renderFinalFour(finalFour, eliminatedTeams) {
+  let html = '<div class="final-four-section">';
+  html += '<div class="ff-label">Final Four</div>';
+
+  // Final Four games
+  html += '<div class="ff-games">';
+  if (finalFour[5] && finalFour[5].length > 0) {
+    for (const game of finalFour[5]) {
+      html += renderMatchup(game, eliminatedTeams);
+    }
+  } else {
+    html += renderEmptyMatchup();
+    html += renderEmptyMatchup();
+  }
+  html += '</div>';
+
+  // Championship
+  html += '<div class="championship-section">';
+  html += '<div class="ff-label">Championship</div>';
+  if (finalFour[6] && finalFour[6].length > 0) {
+    for (const game of finalFour[6]) {
+      html += renderMatchup(game, eliminatedTeams);
+    }
+  } else {
+    html += renderEmptyMatchup();
+  }
+  html += '</div>';
+
+  html += '</div>';
+  return html;
+}
+
+/**
+ * Render a matchup (game)
+ */
+function renderMatchup(game, eliminatedTeams) {
   const team1 = game.awayTeam || {};
   const team2 = game.homeTeam || {};
 
-  const owner1 = getTeamOwner(team1.name);
-  const owner2 = getTeamOwner(team2.name);
-
-  const isEliminated1 = eliminatedTeams.has((team1.ownerTeamName || team1.name || '').toLowerCase());
-  const isEliminated2 = eliminatedTeams.has((team2.ownerTeamName || team2.name || '').toLowerCase());
-
   const statusClass = game.isLive ? 'live' : game.isFinal ? 'final' : 'scheduled';
 
+  let html = `<div class="matchup ${statusClass}">`;
+  html += renderMatchupTeam(team1, game.isFinal, eliminatedTeams, game.isLive);
+  html += renderMatchupTeam(team2, game.isFinal, eliminatedTeams, game.isLive);
+  if (game.isLive) {
+    html += '<div class="matchup-live">LIVE</div>';
+  }
+  html += '</div>';
+
+  return html;
+}
+
+/**
+ * Render empty matchup placeholder
+ */
+function renderEmptyMatchup() {
   return `
-    <div class="bracket-game ${statusClass}">
-      ${renderBracketTeam(team1, owner1, game.isFinal && team1.isWinner, isEliminated1, game.isLive)}
-      ${renderBracketTeam(team2, owner2, game.isFinal && team2.isWinner, isEliminated2, game.isLive)}
-      ${game.isLive ? '<div class="bracket-live-indicator">LIVE</div>' : ''}
+    <div class="matchup empty">
+      <div class="matchup-team tbd"><span class="seed">-</span><span class="name">TBD</span></div>
+      <div class="matchup-team tbd"><span class="seed">-</span><span class="name">TBD</span></div>
     </div>
   `;
 }
 
 /**
- * Render a team in a bracket game
+ * Render a team in a matchup
  */
-function renderBracketTeam(team, owner, isWinner, isEliminated, isLive) {
+function renderMatchupTeam(team, isFinal, eliminatedTeams, isLive) {
   if (!team || !team.name) {
-    return `<div class="bracket-team tbd"><span class="team-seed">-</span><span class="team-name">TBD</span></div>`;
+    return `<div class="matchup-team tbd"><span class="seed">-</span><span class="name">TBD</span></div>`;
   }
 
-  const colorStyle = owner ? `border-left: 3px solid ${owner.color};` : '';
+  const owner = getTeamOwner(team.name);
+  const isEliminated = eliminatedTeams.has((team.ownerTeamName || team.name || '').toLowerCase());
+  const isWinner = isFinal && team.isWinner;
+
+  const colorStyle = owner ? `border-left-color: ${owner.color};` : '';
   const nameStyle = owner ? `color: ${owner.color};` : '';
-  const winnerClass = isWinner ? 'winner' : '';
-  const eliminatedClass = isEliminated ? 'eliminated' : '';
+  const classes = [
+    'matchup-team',
+    isWinner ? 'winner' : '',
+    isEliminated ? 'eliminated' : ''
+  ].filter(Boolean).join(' ');
 
   return `
-    <div class="bracket-team ${winnerClass} ${eliminatedClass}" style="${colorStyle}">
-      <span class="team-seed">#${team.seed || '?'}</span>
-      <span class="team-name" style="${nameStyle}">${team.abbreviation || team.name}</span>
-      <span class="team-score">${team.score !== undefined && (isLive || isWinner || isEliminated) ? team.score : ''}</span>
+    <div class="${classes}" style="${colorStyle}">
+      <span class="seed">${team.seed || '?'}</span>
+      <span class="name" style="${nameStyle}">${team.abbreviation || team.name}</span>
+      ${(isLive || isFinal) && team.score !== undefined ? `<span class="score">${team.score}</span>` : ''}
     </div>
   `;
 }
 
 /**
- * Render the bracket legend showing player colors
+ * Render bracket legend
  */
 function renderBracketLegend() {
   let html = '<div class="bracket-legend"><span class="legend-title">Players:</span>';
@@ -205,28 +271,19 @@ function renderBracketLegend() {
 }
 
 /**
- * Get summary stats for the bracket
+ * Get bracket stats
  */
 export function getBracketStats(allGames) {
-  const rounds = organizeGamesByRound(allGames);
-  const stats = {
-    totalGames: 0,
-    completedGames: 0,
-    liveGames: 0,
-    currentRound: 'Not Started'
-  };
+  const { regions, finalFour } = organizeGames(allGames);
+  let totalGames = 0;
+  let completedGames = 0;
 
-  for (let r = 1; r <= 6; r++) {
-    const games = rounds[r];
-    stats.totalGames += games.length;
-    stats.completedGames += games.filter(g => g.isFinal).length;
-    stats.liveGames += games.filter(g => g.isLive).length;
-
-    if (games.some(g => g.isLive || !g.isFinal)) {
-      const roundNames = ['', 'First Round', 'Second Round', 'Sweet 16', 'Elite 8', 'Final Four', 'Championship'];
-      stats.currentRound = roundNames[r];
+  for (const region of Object.values(regions)) {
+    for (const games of Object.values(region)) {
+      totalGames += games.length;
+      completedGames += games.filter(g => g.isFinal).length;
     }
   }
 
-  return stats;
+  return { totalGames, completedGames };
 }
