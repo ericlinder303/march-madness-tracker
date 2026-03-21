@@ -8,6 +8,7 @@ import {
   processEliminations,
   findTeamOwner
 } from './espn.js';
+import { renderBracket, getBracketStats } from './bracket.js';
 
 // LocalStorage key
 const STORAGE_KEY = 'march-madness-tracker-2026';
@@ -24,7 +25,8 @@ const state = {
   isLoading: true,
   error: null,
   pollInterval: null,
-  isOffline: false
+  isOffline: false,
+  bracketVisible: false
 };
 
 // DOM Elements
@@ -34,7 +36,9 @@ const elements = {
   refreshBtn: document.getElementById('refresh-btn'),
   scoreboardGames: document.getElementById('scoreboard-games'),
   playerGrid: document.getElementById('player-grid'),
-  timelineList: document.getElementById('timeline-list')
+  timelineList: document.getElementById('timeline-list'),
+  bracketToggle: document.getElementById('bracket-toggle'),
+  bracketContent: document.getElementById('bracket-content')
 };
 
 /**
@@ -84,6 +88,29 @@ function loadFromCache() {
 }
 
 /**
+ * Toggle bracket visibility
+ */
+function toggleBracket() {
+  state.bracketVisible = !state.bracketVisible;
+  elements.bracketContent.classList.toggle('hidden', !state.bracketVisible);
+  elements.bracketToggle.textContent = state.bracketVisible ? 'Hide Bracket' : 'Show Bracket';
+
+  if (state.bracketVisible) {
+    renderBracketView();
+  }
+}
+
+/**
+ * Render the bracket visualization
+ */
+function renderBracketView() {
+  if (!state.bracketVisible) return;
+
+  const bracketHtml = renderBracket(state.allGames, state.eliminations);
+  elements.bracketContent.innerHTML = bracketHtml;
+}
+
+/**
  * Initialize the application
  */
 async function init() {
@@ -92,6 +119,9 @@ async function init() {
   try {
     // Set up refresh button
     elements.refreshBtn.addEventListener('click', () => refreshData());
+
+    // Set up bracket toggle
+    elements.bracketToggle.addEventListener('click', toggleBracket);
 
     // Initialize team status (all alive by default)
     initializeTeamStatus();
@@ -279,6 +309,7 @@ function renderAll() {
   renderHeader();
   renderScoreboard();
   renderPlayerCards();
+  renderBracketView();
   renderTimeline();
 }
 
