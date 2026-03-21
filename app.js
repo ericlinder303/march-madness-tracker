@@ -265,7 +265,8 @@ function updateLiveGameStatus() {
           opponent: game.awayTeam?.name,
           opponentScore: game.awayTeam?.score,
           clock: game.displayClock,
-          period: game.period
+          period: game.period,
+          winProb: game.probability?.home || null
         };
       }
       if (game.awayTeam?.ownerTeamName && state.teamStatus[game.awayTeam.ownerTeamName]) {
@@ -274,7 +275,8 @@ function updateLiveGameStatus() {
           opponent: game.homeTeam?.name,
           opponentScore: game.homeTeam?.score,
           clock: game.displayClock,
-          period: game.period
+          period: game.period,
+          winProb: game.probability?.away || null
         };
       }
     }
@@ -349,6 +351,10 @@ function renderScoreboard() {
         ? 'FINAL'
         : formatTime(game.startTime);
 
+    // Get win probabilities for live games
+    const awayProb = game.isLive && game.probability ? game.probability.away : null;
+    const homeProb = game.isLive && game.probability ? game.probability.home : null;
+
     return `
       <div class="game-card ${game.isLive ? 'live' : ''}">
         <div class="game-status">
@@ -357,8 +363,8 @@ function renderScoreboard() {
           </span>
         </div>
         <div class="game-teams">
-          ${renderGameTeam(game.awayTeam, game.isFinal)}
-          ${renderGameTeam(game.homeTeam, game.isFinal)}
+          ${renderGameTeam(game.awayTeam, game.isFinal, awayProb)}
+          ${renderGameTeam(game.homeTeam, game.isFinal, homeProb)}
         </div>
         <div class="game-round">${game.round}</div>
       </div>
@@ -371,13 +377,21 @@ function renderScoreboard() {
 /**
  * Render a team in a game card
  */
-function renderGameTeam(team, isFinal) {
+function renderGameTeam(team, isFinal, winProb = null) {
   if (!team) return '';
 
   const ownerColor = team.owner ? PLAYERS[team.owner]?.color : null;
   const teamStyle = ownerColor ? `color: ${ownerColor}` : '';
   const winnerClass = isFinal && team.isWinner ? 'team-winner' : '';
   const loserClass = isFinal && !team.isWinner ? 'team-loser' : '';
+
+  // Format win probability
+  let probHtml = '';
+  if (winProb !== null && winProb !== undefined) {
+    const probPct = Math.round(winProb * 100);
+    const probClass = probPct >= 50 ? 'prob-favored' : 'prob-underdog';
+    probHtml = `<span class="win-prob ${probClass}">${probPct}%</span>`;
+  }
 
   return `
     <div class="game-team ${winnerClass} ${loserClass}">
@@ -386,7 +400,10 @@ function renderGameTeam(team, isFinal) {
         <span class="team-seed">#${team.seed || '?'}</span>
         <span class="team-name" style="${teamStyle}">${team.abbreviation || team.name}</span>
       </div>
-      <span class="team-score">${team.score !== undefined ? team.score : '-'}</span>
+      <div class="team-score-wrap">
+        ${probHtml}
+        <span class="team-score">${team.score !== undefined ? team.score : '-'}</span>
+      </div>
     </div>
   `;
 }
@@ -443,8 +460,14 @@ function renderTeamItem(team, playerColor, isAlive) {
   let statusHtml = '';
   if (isPlaying) {
     const game = status.currentGame;
+    const probHtml = game.winProb !== null ? (() => {
+      const probPct = Math.round(game.winProb * 100);
+      const probClass = probPct >= 50 ? 'prob-favored' : 'prob-underdog';
+      return `<span class="win-prob ${probClass}">${probPct}%</span>`;
+    })() : '';
     statusHtml = `
       <span class="live-score">
+        ${probHtml}
         ${game.score} - ${game.opponentScore}
       </span>
     `;

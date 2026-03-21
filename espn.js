@@ -152,6 +152,10 @@ function parseGamesResponse(data) {
     const roundNote = event.competitions?.[0]?.notes?.find(n => n.type === 'event')?.headline || '';
     const round = roundNote || 'Tournament Game';
 
+    // Get win probability for live games
+    const situation = competition.situation || {};
+    const probability = situation.lastPlay?.probability || null;
+
     return {
       id: event.id,
       status: status,
@@ -163,7 +167,11 @@ function parseGamesResponse(data) {
       round,
       startTime: event.date,
       homeTeam: homeTeam ? parseTeam(homeTeam) : null,
-      awayTeam: awayTeam ? parseTeam(awayTeam) : null
+      awayTeam: awayTeam ? parseTeam(awayTeam) : null,
+      probability: probability ? {
+        home: probability.homeWinPercentage,
+        away: probability.awayWinPercentage
+      } : null
     };
   }).filter(Boolean);
 }
