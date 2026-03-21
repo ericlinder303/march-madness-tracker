@@ -74,8 +74,18 @@ export function findTeamOwner(espnTeamName) {
 /**
  * Fetch today's tournament games from ESPN
  */
+/**
+ * Get local date string in YYYYMMDD format
+ */
+function getLocalDateString(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}${month}${day}`;
+}
+
 export async function fetchTodaysGames() {
-  const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+  const today = getLocalDateString();
   const url = `${ESPN_CONFIG.baseUrl}${ESPN_CONFIG.scoreboardEndpoint}?dates=${today}&groups=${ESPN_CONFIG.tournamentGroup}&limit=100`;
 
   try {
@@ -103,7 +113,7 @@ export async function fetchAllTournamentGames() {
   for (let i = 0; i < 7; i++) {
     const date = new Date(today);
     date.setDate(date.getDate() - i);
-    const dateStr = date.toISOString().slice(0, 10).replace(/-/g, '');
+    const dateStr = getLocalDateString(date);
 
     try {
       const url = `${ESPN_CONFIG.baseUrl}${ESPN_CONFIG.scoreboardEndpoint}?dates=${dateStr}&groups=${ESPN_CONFIG.tournamentGroup}&limit=100`;
@@ -144,9 +154,10 @@ function parseGamesResponse(data) {
     const awayTeam = competitors.find(c => c.homeAway === 'away');
 
     const status = event.status?.type?.name || 'STATUS_SCHEDULED';
-    const isLive = status === 'STATUS_IN_PROGRESS';
-    const isFinal = status === 'STATUS_FINAL';
-    const isScheduled = status === 'STATUS_SCHEDULED';
+    const statusState = event.status?.type?.state || '';
+    const isLive = status === 'STATUS_IN_PROGRESS' || status === 'STATUS_HALFTIME' || statusState === 'in';
+    const isFinal = status === 'STATUS_FINAL' || statusState === 'post';
+    const isScheduled = !isLive && !isFinal;
 
     // Get round info from notes
     const roundNote = event.competitions?.[0]?.notes?.find(n => n.type === 'event')?.headline || '';
