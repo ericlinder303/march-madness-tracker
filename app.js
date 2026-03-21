@@ -9,6 +9,7 @@ import {
   findTeamOwner
 } from './espn.js';
 import { renderBracket, getBracketStats } from './bracket.js';
+import { initSound, toggleSound, isSoundEnabled, checkNewEliminations } from './sound.js';
 
 // LocalStorage key
 const STORAGE_KEY = 'march-madness-tracker-2026';
@@ -38,7 +39,8 @@ const elements = {
   playerGrid: document.getElementById('player-grid'),
   timelineList: document.getElementById('timeline-list'),
   bracketToggle: document.getElementById('bracket-toggle'),
-  bracketContent: document.getElementById('bracket-content')
+  bracketContent: document.getElementById('bracket-content'),
+  soundToggle: document.getElementById('sound-toggle')
 };
 
 /**
@@ -101,6 +103,22 @@ function toggleBracket() {
 }
 
 /**
+ * Handle sound toggle
+ */
+function handleSoundToggle() {
+  const enabled = toggleSound();
+  updateSoundButton(enabled);
+}
+
+/**
+ * Update sound button appearance
+ */
+function updateSoundButton(enabled) {
+  elements.soundToggle.classList.toggle('enabled', enabled);
+  elements.soundToggle.textContent = enabled ? '🔊 Sound' : '🔇 Sound';
+}
+
+/**
  * Render the bracket visualization
  */
 function renderBracketView() {
@@ -122,6 +140,11 @@ async function init() {
 
     // Set up bracket toggle
     elements.bracketToggle.addEventListener('click', toggleBracket);
+
+    // Set up sound toggle
+    const soundEnabled = initSound();
+    updateSoundButton(soundEnabled);
+    elements.soundToggle.addEventListener('click', handleSoundToggle);
 
     // Initialize team status (all alive by default)
     initializeTeamStatus();
@@ -193,6 +216,13 @@ async function refreshData() {
     // Process eliminations
     state.eliminations = processEliminations(allGames);
     console.log('Eliminations found:', state.eliminations.length);
+
+    // Check for new eliminations and play sound
+    const newEliminations = checkNewEliminations(state.eliminations);
+    if (newEliminations.length > 0) {
+      console.log('New eliminations:', newEliminations.map(e => e.team));
+    }
+
     updateTeamStatusFromEliminations();
 
     // Update live game info for teams
