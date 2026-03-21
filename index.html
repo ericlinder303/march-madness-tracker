@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>March Madness Pool Tracker 2026</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏀</text></svg>">
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <h1>March Madness Pool Tracker 2026</h1>
+    <div class="header-meta">
+      <span class="tournament-round" id="tournament-round">Loading tournament data...</span>
+      <div class="last-updated">
+        <span id="last-updated">--</span>
+        <button class="refresh-btn" id="refresh-btn" title="Refresh scores">
+          ↻ Refresh
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Scoreboard Strip -->
+  <section class="scoreboard-strip">
+    <h2 class="scoreboard-title">Today's Games</h2>
+    <div class="scoreboard-games" id="scoreboard-games">
+      <div class="loading">
+        <div class="loading-spinner"></div>
+        <span>Loading games...</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <!-- Player Dashboard -->
+    <div class="player-grid" id="player-grid">
+      <!-- Player cards will be rendered by JavaScript -->
+    </div>
+
+    <!-- Elimination Timeline -->
+    <section class="timeline-section">
+      <h2 class="timeline-title">Elimination Timeline</h2>
+      <div class="timeline-list" id="timeline-list">
+        <p class="timeline-empty">No eliminations yet. Good luck everyone!</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- Scripts -->
+  <script type="module" src="app.js"></script>
+</body>
+</html>
