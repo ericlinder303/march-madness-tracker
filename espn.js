@@ -244,6 +244,22 @@ export function hasLiveGames(games) {
 }
 
 /**
+ * Extract short round name from ESPN's full round string
+ */
+function getShortRoundName(fullRound) {
+  if (!fullRound) return 'Tournament';
+
+  if (fullRound.includes('1st Round') || fullRound.includes('First Round')) return 'Round 1';
+  if (fullRound.includes('2nd Round') || fullRound.includes('Second Round')) return 'Round 2';
+  if (fullRound.includes('Sweet 16') || fullRound.includes('Sweet Sixteen')) return 'Sweet 16';
+  if (fullRound.includes('Elite Eight') || fullRound.includes('Elite 8')) return 'Elite 8';
+  if (fullRound.includes('Final Four')) return 'Final Four';
+  if (fullRound.includes('Championship')) return 'Championship';
+
+  return 'Tournament';
+}
+
+/**
  * Process games to determine team eliminations
  */
 export function processEliminations(games) {
@@ -261,7 +277,7 @@ export function processEliminations(games) {
       eliminations.push({
         team: loser.ownerTeamName || loser.name,
         player: loser.owner,
-        round: game.round,
+        round: getShortRoundName(game.round),
         score: `${loser.score}-${winner?.score || '?'}`,
         opponent: winner?.name || 'Unknown',
         gameId: game.id,

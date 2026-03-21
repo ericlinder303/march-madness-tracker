@@ -502,12 +502,14 @@ function renderTeamItem(team, playerColor, isAlive) {
       </span>
     `;
   } else if (!isAlive && status.eliminatedIn) {
-    const shortRound = status.eliminatedIn.replace('First Round', 'R1')
-      .replace('Second Round', 'R2')
+    // Round names are already clean from espn.js
+    const shortRound = status.eliminatedIn
+      .replace('Round 1', 'R1')
+      .replace('Round 2', 'R2')
       .replace('Sweet 16', 'S16')
-      .replace('Elite Eight', 'E8')
+      .replace('Elite 8', 'E8')
       .replace('Final Four', 'F4')
-      .replace('Championship', 'Finals');
+      .replace('Championship', 'Final');
     statusHtml = `<span class="team-item-status">${shortRound}: ${status.finalScore}</span>`;
   }
 
