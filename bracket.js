@@ -124,7 +124,9 @@ export function renderBracket(allGames, eliminations) {
  */
 function renderRegion(regionName, rounds, eliminatedTeams, side) {
   const roundNames = ['', 'Round 1', 'Round 2', 'Sweet 16', 'Elite 8'];
-  const roundOrder = side === 'left' ? [1, 2, 3, 4] : [4, 3, 2, 1];
+  // Left side: R1 on left, advancing right toward center
+  // Right side: R1 on right, advancing left toward center (CSS handles the flip)
+  const roundOrder = [1, 2, 3, 4];
 
   let html = `<div class="bracket-region" data-region="${regionName}">`;
   html += `<div class="region-header">${regionName}</div>`;
