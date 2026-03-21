@@ -47,12 +47,23 @@ function parseGameInfo(game) {
   const round = game.round || '';
   let roundNum = 0;
 
-  if (round.includes('First Round') || round.includes('Round of 64')) roundNum = 1;
-  else if (round.includes('Second Round') || round.includes('Round of 32')) roundNum = 2;
-  else if (round.includes('Sweet 16') || round.includes('Sweet Sixteen')) roundNum = 3;
-  else if (round.includes('Elite Eight') || round.includes('Elite 8')) roundNum = 4;
-  else if (round.includes('Final Four')) roundNum = 5;
-  else if (round.includes('Championship') || round.includes('National Championship')) roundNum = 6;
+  // Check for various round name formats
+  if (round.includes('1st Round') || round.includes('First Round') || round.includes('Round of 64')) {
+    roundNum = 1;
+  } else if (round.includes('2nd Round') || round.includes('Second Round') || round.includes('Round of 32')) {
+    roundNum = 2;
+  } else if (round.includes('Sweet 16') || round.includes('Sweet Sixteen')) {
+    roundNum = 3;
+  } else if (round.includes('Elite Eight') || round.includes('Elite 8')) {
+    roundNum = 4;
+  } else if (round.includes('Final Four')) {
+    roundNum = 5;
+  } else if (round.includes('Championship') || round.includes('National Championship')) {
+    // Make sure it's the actual championship game, not just a game in the championship tournament
+    if (!round.includes('1st') && !round.includes('2nd') && !round.includes('Region')) {
+      roundNum = 6;
+    }
+  }
 
   return { roundNum, roundName: round };
 }
