@@ -9,6 +9,9 @@ import {
   findTeamOwner
 } from './espn.js';
 
+// LocalStorage key
+const STORAGE_KEY = 'march-madness-tracker-2026';
+
 // Application State
 const state = {
   players: PLAYERS,
@@ -20,7 +23,8 @@ const state = {
   currentRound: 'Loading...',
   isLoading: true,
   error: null,
-  pollInterval: null
+  pollInterval: null,
+  isOffline: false
 };
 
 // DOM Elements
@@ -32,6 +36,52 @@ const elements = {
   playerGrid: document.getElementById('player-grid'),
   timelineList: document.getElementById('timeline-list')
 };
+
+/**
+ * Save state to localStorage
+ */
+function saveToCache() {
+  try {
+    const cacheData = {
+      todaysGames: state.todaysGames,
+      allGames: state.allGames,
+      eliminations: state.eliminations,
+      teamStatus: state.teamStatus,
+      currentRound: state.currentRound,
+      lastUpdated: state.lastUpdated?.toISOString(),
+      cachedAt: new Date().toISOString()
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(cacheData));
+    console.log('State saved to cache');
+  } catch (error) {
+    console.warn('Failed to save to localStorage:', error);
+  }
+}
+
+/**
+ * Load state from localStorage
+ */
+function loadFromCache() {
+  try {
+    const cached = localStorage.getItem(STORAGE_KEY);
+    if (!cached) return false;
+
+    const cacheData = JSON.parse(cached);
+
+    state.todaysGames = cacheData.todaysGames || [];
+    state.allGames = cacheData.allGames || [];
+    state.eliminations = cacheData.eliminations || [];
+    state.teamStatus = cacheData.teamStatus || {};
+    state.currentRound = cacheData.currentRound || 'Tournament';
+    state.lastUpdated = cacheData.lastUpdated ? new Date(cacheData.lastUpdated) : null;
+
+    console.log('Loaded from cache, cached at:', cacheData.cachedAt);
+    return true;
+  } catch (error) {
+    console.warn('Failed to load from localStorage:', error);
+    return false;
+  }
+}
 
 /**
  * Initialize the application
@@ -46,10 +96,17 @@ async function init() {
     // Initialize team status (all alive by default)
     initializeTeamStatus();
 
-    // Render initial player cards
-    renderPlayerCards();
+    // Try to load cached data first for instant display
+    const hasCachedData = loadFromCache();
+    if (hasCachedData) {
+      console.log('Rendering cached data...');
+      renderAll();
+    } else {
+      // Render initial player cards
+      renderPlayerCards();
+    }
 
-    // Fetch data
+    // Fetch fresh data (will update cache)
     await refreshData();
 
     // Start polling
@@ -84,6 +141,7 @@ async function refreshData() {
   console.log('Refreshing data...');
   state.isLoading = true;
   state.error = null;
+  state.isOffline = false;
   elements.refreshBtn.disabled = true;
 
   try {
@@ -110,6 +168,9 @@ async function refreshData() {
     // Update live game info for teams
     updateLiveGameStatus();
 
+    // Save to cache for offline use
+    saveToCache();
+
     // Render everything
     console.log('Rendering...');
     renderAll();
@@ -118,7 +179,15 @@ async function refreshData() {
   } catch (error) {
     console.error('Failed to refresh data:', error);
     state.error = error.message;
-    renderError();
+    state.isOffline = true;
+
+    // If we have cached data, show it with offline indicator
+    if (state.todaysGames.length > 0 || state.allGames.length > 0) {
+      console.log('Using cached data (offline mode)');
+      renderAll();
+    } else {
+      renderError();
+    }
   } finally {
     state.isLoading = false;
     elements.refreshBtn.disabled = false;
@@ -225,7 +294,8 @@ function renderHeader() {
       minute: '2-digit',
       second: '2-digit'
     });
-    elements.lastUpdated.textContent = `Last updated: ${timeStr}`;
+    const offlineIndicator = state.isOffline ? ' (offline)' : '';
+    elements.lastUpdated.textContent = `Last updated: ${timeStr}${offlineIndicator}`;
   }
 }
 

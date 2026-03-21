@@ -107,6 +107,20 @@ body {
   cursor: not-allowed;
 }
 
+/* Offline indicator */
+.offline-banner {
+  background: linear-gradient(90deg, #F59E0B, #D97706);
+  color: #111827;
+  text-align: center;
+  padding: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.last-updated.offline {
+  color: #F59E0B;
+}
+
 /* Scoreboard Strip */
 .scoreboard-strip {
   background: var(--bg-secondary);
