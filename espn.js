@@ -273,12 +273,15 @@ export function processEliminations(games) {
   for (const game of games) {
     if (!game.isFinal) continue;
 
-    const loser = game.homeTeam?.isWinner === false ? game.homeTeam :
-                  game.awayTeam?.isWinner === false ? game.awayTeam : null;
+    // Find the winner first - only one team should have isWinner === true
     const winner = game.homeTeam?.isWinner === true ? game.homeTeam :
                    game.awayTeam?.isWinner === true ? game.awayTeam : null;
 
+    // The loser is the other team (only if there's a clear winner)
+    const loser = winner ? (winner === game.homeTeam ? game.awayTeam : game.homeTeam) : null;
+
     if (loser && loser.owner) {
+      console.log(`Elimination detected: ${loser.ownerTeamName || loser.name} (${loser.owner}) lost to ${winner?.name}`);
       eliminations.push({
         team: loser.ownerTeamName || loser.name,
         player: loser.owner,
