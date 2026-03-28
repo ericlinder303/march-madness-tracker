@@ -195,6 +195,11 @@ function parseTeam(competitor) {
   const teamName = team.displayName || team.name || 'Unknown';
   const owner = findTeamOwner(teamName);
 
+  // Log when we find a pool team
+  if (owner) {
+    console.log(`Team matched: ESPN "${teamName}" -> Config "${owner.team}" (${owner.player})`);
+  }
+
   return {
     id: team.id,
     name: teamName,
