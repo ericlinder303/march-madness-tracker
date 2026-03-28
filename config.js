@@ -112,7 +112,8 @@ export const TEAM_ALIASES = {
   "Prairie View Panthers": "Prairie View A&M Panthers",
   "Prairie View": "Prairie View A&M Panthers",
   "Cal Baptist Lancers": "California Baptist Lancers",
-  "CBU Lancers": "California Baptist Lancers"
+  "CBU Lancers": "California Baptist Lancers",
+  "Pennsylvania Quakers": "Penn Quakers"
 };
 
 // ESPN API configuration
