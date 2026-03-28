@@ -196,11 +196,6 @@ function parseTeam(competitor) {
   const teamName = team.displayName || team.name || 'Unknown';
   const owner = findTeamOwner(teamName);
 
-  // Log when we find a pool team
-  if (owner) {
-    console.log(`Team matched: ESPN "${teamName}" -> Config "${owner.team}" (${owner.player})`);
-  }
-
   return {
     id: team.id,
     name: teamName,
@@ -282,7 +277,6 @@ export function processEliminations(games) {
     const loser = winner ? (winner === game.homeTeam ? game.awayTeam : game.homeTeam) : null;
 
     if (loser && loser.owner) {
-      console.log(`Elimination detected: ${loser.ownerTeamName || loser.name} (${loser.owner}) lost to ${winner?.name}`);
       eliminations.push({
         team: loser.ownerTeamName || loser.name,
         player: loser.owner,

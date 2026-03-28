@@ -215,8 +215,6 @@ async function refreshData() {
 
     // Process eliminations
     state.eliminations = processEliminations(allGames);
-    console.log('Eliminations found:', state.eliminations.length);
-    console.log('Eliminated teams:', state.eliminations.map(e => `${e.team} (${e.player})`));
 
     // Check for new eliminations and play sound
     const newEliminations = checkNewEliminations(state.eliminations);
@@ -225,15 +223,6 @@ async function refreshData() {
     }
 
     updateTeamStatusFromEliminations();
-
-    // Log team status summary for debugging
-    const aliveByPlayer = {};
-    for (const [playerName, playerData] of Object.entries(PLAYERS)) {
-      const alive = playerData.teams.filter(t => state.teamStatus[t.name]?.alive).length;
-      const total = playerData.teams.length;
-      aliveByPlayer[playerName] = `${alive}/${total}`;
-    }
-    console.log('Teams alive by player:', aliveByPlayer);
 
     // Update live game info for teams
     updateLiveGameStatus();
@@ -278,9 +267,6 @@ function updateTeamStatusFromEliminations() {
       state.teamStatus[elim.team].eliminatedIn = elim.round;
       state.teamStatus[elim.team].finalScore = elim.score;
       state.teamStatus[elim.team].opponent = elim.opponent;
-    } else {
-      // Debug: log unmatched eliminations
-      console.warn(`Elimination team "${elim.team}" not found in teamStatus`);
     }
   }
 }
