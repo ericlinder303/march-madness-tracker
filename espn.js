@@ -105,12 +105,13 @@ export async function fetchTodaysGames() {
  * Fetch all tournament games (for tracking eliminations across multiple days)
  */
 export async function fetchAllTournamentGames() {
-  // Fetch games from the past week to capture all tournament games
+  // Fetch games from the past 3 weeks to capture the full tournament
+  // Tournament typically spans ~3 weeks (First Four through Championship)
   const games = [];
   const today = new Date();
 
-  // Fetch last 7 days of games
-  for (let i = 0; i < 7; i++) {
+  // Fetch last 21 days of games to cover the entire tournament
+  for (let i = 0; i < 21; i++) {
     const date = new Date(today);
     date.setDate(date.getDate() - i);
     const dateStr = getLocalDateString(date);
